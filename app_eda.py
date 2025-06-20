@@ -310,18 +310,29 @@ class EDA:
                          f"{p.get_width():.1f}", va="center")
 
             # --- % 변화 막대 ---
+            fig1, ax1 = plt.subplots(figsize=(8,6))
+            sns.barplot(y="eng_region", x="change_k",
+            data=merged, palette="viridis", ax=ax1)
+            ax1.set_title("Population Change (Last 5 Years)")
+            ax1.set_xlabel("Change (thousand)")
+            ax1.set_ylabel("")
+            for p in ax1.patches:
+                ax1.text(p.get_width(), p.get_y() + 0.5,
+                f"{p.get_width():.1f}", va="center")
+
+            # --- % 변화 막대 (✱ 수정: pct_change 기준 정렬) ---
+            merged_pct = merged.sort_values("pct_change", ascending=False)
+
             fig2, ax2 = plt.subplots(figsize=(8,6))
             sns.barplot(y="eng_region", x="pct_change",
-                        data=merged, palette="coolwarm", ax=ax2)
+            data=merged_pct, palette="coolwarm", ax=ax2)
             ax2.set_title("Population Change Rate (%)")
             ax2.set_xlabel("Change (%)")
             ax2.set_ylabel("")
             for p in ax2.patches:
-                ax2.text(p.get_width(), p.get_y()+0.5,
-                         f"{p.get_width():.2f}%", va="center")
-
-            st.pyplot(fig1); st.pyplot(fig2)
-
+                ax2.text(p.get_width(), p.get_y() + 0.5,
+                f"{p.get_width():.2f}%", va="center")
+    
             st.markdown(
                 "- **경기** 등 수도권은 여전히 인구가 순증하고 있지만, 다수 지방권은 순감세가 두드러집니다.\n"
                 "- 변화율(% 기준)로 보면 **세종**처럼 규모는 작지만 성장률이 높은 도시가 상위권에 위치합니다."
