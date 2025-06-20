@@ -49,18 +49,14 @@ class Home:
         # Kaggle 데이터셋 출처 및 소개
         st.markdown("""
                 ---
-                **Bike Sharing Demand 데이터셋**  
-                - 제공처: [Kaggle Bike Sharing Demand Competition](https://www.kaggle.com/c/bike-sharing-demand)  
-                - 설명: 2011–2012년 캘리포니아 주의 수도인 미국 워싱턴 D.C. 인근 도시에서 시간별 자전거 대여량을 기록한 데이터  
+                **Bike Sharing Demand 데이터셋**   
+                - 설명: 2008~2023까지 각 지역별 인구 분석  
                 - 주요 변수:  
-                  - `datetime`: 날짜 및 시간  
-                  - `season`: 계절  
-                  - `holiday`: 공휴일 여부  
-                  - `workingday`: 근무일 여부  
-                  - `weather`: 날씨 상태  
-                  - `temp`, `atemp`: 기온 및 체감온도  
-                  - `humidity`, `windspeed`: 습도 및 풍속  
-                  - `casual`, `registered`, `count`: 비등록·등록·전체 대여 횟수  
+                  - `year`: 집계 기준 연도  
+                  - `region_kr`: 시·도 단위 행정구역 (전국 포함)	 
+                  - `population`: 해당 연·지역의 총 인구(명)
+                  - `births`: 같은 연도 출생아 총계	  
+                  - `deaths`: 같은 연도 사망자 총계	
                 """)
 
 # ---------------------
