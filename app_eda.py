@@ -49,7 +49,7 @@ class Home:
         # Kaggle 데이터셋 출처 및 소개
         st.markdown("""
                 ---
-                **Bike Sharing Demand 데이터셋**   
+                **인구 조사 데이터셋**   
                 - 설명: 2008~2023까지 각 지역별 인구 분석  
                 - 주요 변수:  
                   - `year`: 집계 기준 연도  
