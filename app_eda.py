@@ -196,7 +196,75 @@ class Logout:
 # ---------------------
 # EDA 페이지 클래스
 # ---------------------
-계량 (`df.describe()`)")
+class EDA:
+    def __init__(self):
+        st.title("📊 Bike Sharing Demand EDA")
+        uploaded = st.file_uploader("데이터셋 업로드 (train.csv)", type="csv")
+        if not uploaded:
+            st.info("train.csv 파일을 업로드 해주세요.")
+            return
+
+        df = pd.read_csv(uploaded, parse_dates=['datetime'])
+
+        tabs = st.tabs([
+            "1. 목적 & 절차",
+            "2. 데이터셋 설명",
+            "3. 데이터 로드 & 품질 체크",
+            "4. Datetime 특성 추출",
+            "5. 시각화",
+            "6. 상관관계 분석",
+            "7. 이상치 제거",
+            "8. 로그 변환"
+        ])
+
+        # 1. 목적 & 분석 절차
+        with tabs[0]:
+            st.header("🔭 목적 & 분석 절차")
+            st.markdown("""
+            **목적**: Bike Sharing Demand 데이터셋을 탐색하고,
+            다양한 특성이 대여량(count)에 미치는 영향을 파악합니다.
+
+            **절차**:
+            1. 데이터 구조 및 기초 통계 확인  
+            2. 결측치/중복치 등 품질 체크  
+            3. datetime 특성(연도, 월, 일, 시, 요일) 추출  
+            4. 주요 변수 시각화  
+            5. 변수 간 상관관계 분석  
+            6. 이상치 탐지 및 제거  
+            7. 로그 변환을 통한 분포 안정화
+            """)
+
+        # 2. 데이터셋 설명
+        with tabs[1]:
+            st.header("🔍 데이터셋 설명")
+            st.markdown(f"""
+            - **train.csv**: 2011–2012년까지의 시간대별 대여 기록  
+            - 총 관측치: {df.shape[0]}개  
+            - 주요 변수:
+              - **datetime**: 날짜와 시간 (YYYY-MM-DD HH:MM:SS)  
+              - **season**: 계절 (1: 봄, 2: 여름, 3: 가을, 4: 겨울)  
+              - **holiday**: 공휴일 여부 (0: 평일, 1: 공휴일)  
+              - **workingday**: 근무일 여부 (0: 주말/공휴일, 1: 근무일)  
+              - **weather**: 날씨 상태  
+                - 1: 맑음·부분적으로 흐림  
+                - 2: 안개·흐림  
+                - 3: 가벼운 비/눈  
+                - 4: 폭우/폭설 등  
+              - **temp**: 실제 기온 (섭씨)  
+              - **atemp**: 체감 온도 (섭씨)  
+              - **humidity**: 상대 습도 (%)  
+              - **windspeed**: 풍속 (정규화된 값)  
+              - **casual**: 비등록 사용자 대여 횟수  
+              - **registered**: 등록 사용자 대여 횟수  
+              - **count**: 전체 대여 횟수 (casual + registered)
+            """)
+
+            st.subheader("1) 데이터 구조 (`df.info()`)")
+            buffer = io.StringIO()
+            df.info(buf=buffer)
+            st.text(buffer.getvalue())
+
+            st.subheader("2) 기초 통계량 (`df.describe()`)")
             numeric_df = df.select_dtypes(include=[np.number])
             st.dataframe(numeric_df.describe())
 
@@ -376,7 +444,6 @@ class Logout:
                 > - 오른쪽: 로그 변환 후 분포는 훨씬 균형잡힌 형태로, 중앙값 부근에 데이터가 집중됩니다.  
                 > - 극단치의 영향이 완화되어 이후 분석·모델링 안정성이 높아집니다.
                 """)
-
 
 # ---------------------
 # 페이지 객체 생성
