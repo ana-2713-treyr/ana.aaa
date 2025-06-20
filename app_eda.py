@@ -234,7 +234,7 @@ class EDA:
 
         # ----- 영어 지역명 매핑 -----
         kor2eng = {
-            "서울":"Seoul","부산":"Busan","대구":"Daegu","인천":"Incheon","광주":"Gwangju",
+            "서울":"서울","부산":"Busan","대구":"Daegu","인천":"Incheon","광주":"Gwangju",
             "대전":"Daejeon","울산":"Ulsan","세종":"Sejong","경기":"Gyeonggi","강원":"Gangwon",
             "충북":"Chungbuk","충남":"Chungnam","전북":"Jeonbuk","전남":"Jeonnam",
             "경북":"Gyeongbuk","경남":"Gyeongnam","제주":"Jeju","전국":"National"
@@ -280,7 +280,7 @@ class EDA:
 
         # === 3. 지역별 5년 변화 ===
         with 탭[2]:
-            st.subheader("5-Year Population Change by Region")
+            st.subheader("5년간 변화")
 
             latest = df["연도"].max()
             prev = latest - 5
