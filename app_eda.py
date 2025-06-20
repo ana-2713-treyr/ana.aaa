@@ -323,13 +323,13 @@ class EDA:
             st.pyplot(fig1); st.pyplot(fig2)
 
             st.markdown(
-                "- **Gyeonggi** (경기) 등 수도권은 여전히 인구가 순증하고 있지만, 다수 지방권은 순감세가 두드러집니다.\n"
+                "- **경기** 등 수도권은 여전히 인구가 순증하고 있지만, 다수 지방권은 순감세가 두드러집니다.\n"
                 "- 변화율(% 기준)로 보면 **세종**처럼 규모는 작지만 성장률이 높은 도시가 상위권에 위치합니다."
             )
 
         # === 4. 증감 Top 100 ===
         with 탭[3]:
-            st.subheader("Year-to-Year Δ Top 100 (증감 상위)")
+            st.subheader("증감 상위 100")
 
             tmp = df.sort_values(["지역", "연도"])
             tmp["diff"] = tmp.groupby("지역")["인구"].diff()
