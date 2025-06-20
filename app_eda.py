@@ -207,13 +207,20 @@ KOR2ENG = {
 # ---------------------
 class EDA:
     def __init__(self):
-        st.title("📊 인구수 EDA")
-        uploaded = st .file_uploader("데이터셋 업로드 (population_trends.csv)", type="csv")
-        if not uploaded:
-            st.info("population_trends.csv 파일을 업로드 해주세요.")
-            return
+        st.title("📊 Population Trends EDA")
 
-        df = pd.read_csv(uploaded, parse_dates=['datetime'])
+        uploaded = st.file_uploader("Upload population_trends.csv", type="csv")
+        default_path = "population_trends.csv"
+
+        if uploaded:
+            df = pd.read_csv(uploaded)
+            st.success("File uploaded!")
+        elif os.path.exists(default_path):
+            df = pd.read_csv(default_path)
+            st.info(f"Default file **{default_path}** loaded.")
+        else:
+            st.warning("CSV not found. Upload a file or place population_trends.csv next to this script.")
+            return
 
         # 세종 '-' 결측을 0으로 치환
         df.loc[df["지역"] == "세종", :] = df.loc[df["지역"] == "세종", :].replace("-", 0)
