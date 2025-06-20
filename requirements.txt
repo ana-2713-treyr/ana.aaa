@@ -1,0 +1,3 @@
+﻿streamlit
+pyrebase4
+setuptools
