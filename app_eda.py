@@ -196,7 +196,7 @@ class Logout:
 # ---------------------
 # EDA 페이지 클래스
 # ---------------------
-class PopTrendEDA:
+class EDA:
     def __init__(self):
         st.title("📊 Population Trends EDA")
 
