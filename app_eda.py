@@ -198,10 +198,10 @@ class Logout:
 # ---------------------
 class EDA:
     def __init__(self):
-        st.title("📊 Bike Sharing Demand EDA")
-        uploaded = st.file_uploader("데이터셋 업로드 (train.csv)", type="csv")
+        st.title("📊 인구수 EDA")
+        uploaded = st .file_uploader("데이터셋 업로드 (population_trends.csv)", type="csv")
         if not uploaded:
-            st.info("train.csv 파일을 업로드 해주세요.")
+            st.info("population_trends.csv 파일을 업로드 해주세요.")
             return
 
         df = pd.read_csv(uploaded, parse_dates=['datetime'])
