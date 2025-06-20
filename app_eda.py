@@ -207,146 +207,170 @@ KOR2ENG = {
 # ---------------------
 class EDA:
     def __init__(self):
-        st.title("📊 Population Trends EDA")
+        import streamlit as st
+        import pandas as pd
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import seaborn as sns
 
-        uploaded = st.file_uploader("Upload population_trends.csv", type="csv")
-        default_path = "population_trends.csv"
-
-        if uploaded:
-            df = pd.read_csv(uploaded)
-            st.success("File uploaded!")
-        elif os.path.exists(default_path):
-            df = pd.read_csv(default_path)
-            st.info(f"Default file **{default_path}** loaded.")
-        else:
-            st.warning("CSV not found. Upload a file or place population_trends.csv next to this script.")
+        st.title("📊 인구 통계 EDA")
+        uploaded = st.file_uploader("population_trends.csv 업로드", type="csv")
+        if not uploaded:
+            st.info("population_trends.csv 파일을 업로드 해주세요.")
             return
 
-        # 세종 '-' 결측을 0으로 치환
-        df.loc[df["지역"] == "세종", :] = df.loc[df["지역"] == "세종", :].replace("-", 0)
-        num_cols = ["인구", "출생아수(명)", "사망자수(명)"]
-        df[num_cols] = df[num_cols].apply(pd.to_numeric, errors="coerce")
-        df["region_en"] = df["지역"].map(KOR2ENG).fillna(df["지역"])
+        # ---------- 전처리 ----------
+        df = pd.read_csv(uploaded)
 
-        # ---- Tabs -------------------------------------------------------------
-        tab_stats, tab_trend, tab_region, tab_change, tab_viz = st.tabs(
-            ["Basic Stats", "National Trend", "Region Ranking", "Top Δ", "Pivot Area"]
-        )
+        # 1) 세종 – 결측치 '-' → 0
+        sejong_mask = df["지역"] == "세종"
+        target_cols = ["인구", "출생아수(명)", "사망자수(명)"]
+        for c in target_cols:
+            df.loc[sejong_mask & (df[c] == "-"), c] = 0
 
-        # 1) Basic Stats --------------------------------------------------------
-        with tab_stats:
-            st.header("Basic Statistics & Data Structure")
-            buf = io.StringIO()
-            df.info(buf=buf)
-            st.subheader("DataFrame info()")
-            st.text(buf.getvalue())
-            st.subheader("describe()")
+        # 2) 수치형 변환
+        for c in target_cols:
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+
+        # ----- 영어 지역명 매핑 -----
+        kor2eng = {
+            "서울":"Seoul","부산":"Busan","대구":"Daegu","인천":"Incheon","광주":"Gwangju",
+            "대전":"Daejeon","울산":"Ulsan","세종":"Sejong","경기":"Gyeonggi","강원":"Gangwon",
+            "충북":"Chungbuk","충남":"Chungnam","전북":"Jeonbuk","전남":"Jeonnam",
+            "경북":"Gyeongbuk","경남":"Gyeongnam","제주":"Jeju","전국":"National"
+        }
+
+        # ------------------ 탭 구성 ------------------
+        탭 = st.tabs(["기초 통계", "연도별 추이", "지역별 분석",
+                     "변화량 분석", "시각화"])
+
+        # === 1. 기초 통계 탭 ===
+        with 탭[0]:
+            st.subheader("데이터 구조 (`df.info()`)")
+            st.code(df.info(buf=None, verbose=True, memory_usage=False))
+
+            st.subheader("기초 통계량 (`df.describe()`)")
             st.dataframe(df.describe(include="all"))
 
-        # 2) National Trend & 2035 forecast ------------------------------------
-        with tab_trend:
-            st.header("National Population Trend")
+        # === 2. 연도별 추이(전국) ===
+        with 탭[1]:
+            st.subheader("National Population Trend")
+
             nat = df[df["지역"] == "전국"].sort_values("연도")
+            x = nat["연도"]
+            y = nat["인구"]
+
+            # 2035 예측: 최근 3년 평균 자연증가(출생-사망)
+            recent3 = nat.tail(3)
+            avg_net = (recent3["출생아수(명)"] - recent3["사망자수(명)"]).mean()
+            y_pred = y.iloc[-1] + avg_net * (2035 - x.iloc[-1])
+
             fig, ax = plt.subplots()
-            sns.lineplot(x="연도", y="인구", data=nat, marker="o", ax=ax)
-            ax.set_title("National Population Trend")
+            ax.plot(x, y, marker="o")
+            ax.scatter(2035, y_pred, color="red")
+            ax.text(2035, y_pred, f"{int(y_pred):,}", ha="left", va="bottom")
+            ax.set_title("National Population (Forecast included)")
             ax.set_xlabel("Year")
             ax.set_ylabel("Population")
 
-            recent3 = nat.tail(3)
-            net_change = (recent3["출생아수(명)"] - recent3["사망자수(명)"]).mean()
-            last_year = nat["연도"].max()
-            last_pop = nat["인구"].iloc[-1]
-            years_ahead = 2035 - last_year
-            pred_2035 = int(last_pop + net_change * years_ahead)
-
-            ax.scatter(2035, pred_2035, color="red", zorder=5)
-            ax.annotate(f"2035\n{pred_2035:,}", (2035, pred_2035), textcoords="offset points", xytext=(0, -15), ha="center", color="red")
             st.pyplot(fig)
+            st.caption(
+                f"최근 3년 평균 자연증가 ≈ {int(avg_net):,}명/년을 적용해 2035년 인구를 예측했습니다."
+            )
+
+        # === 3. 지역별 5년 변화 ===
+        with 탭[2]:
+            st.subheader("5-Year Population Change by Region")
+
+            latest = df["연도"].max()
+            prev = latest - 5
+            cur = df[df["연도"] == latest][["지역", "인구"]]
+            past = df[df["연도"] == prev][["지역", "인구"]].rename(columns={"인구":"이전"})
+            merged = cur.merge(past, on="지역")
+            merged = merged[merged["지역"] != "전국"]
+
+            merged["change"]      = merged["인구"] - merged["이전"]
+            merged["pct_change"]  = merged["change"] / merged["이전"] * 100
+            merged["eng_region"]  = merged["지역"].map(kor2eng)
+            merged = merged.sort_values("change", ascending=False)
+
+            # 단위: 천 명
+            merged["change_k"] = (merged["change"] / 1000).round(1)
+
+            # --- 절대치 막대 ---
+            fig1, ax1 = plt.subplots(figsize=(8,6))
+            sns.barplot(y="eng_region", x="change_k",
+                        data=merged, palette="viridis", ax=ax1)
+            ax1.set_title("Population Change (Last 5 Years)")
+            ax1.set_xlabel("Change (thousand)")
+            ax1.set_ylabel("")
+            # 값 표시
+            for p in ax1.patches:
+                ax1.text(p.get_width(), p.get_y()+0.5,
+                         f"{p.get_width():.1f}", va="center")
+
+            # --- % 변화 막대 ---
+            fig2, ax2 = plt.subplots(figsize=(8,6))
+            sns.barplot(y="eng_region", x="pct_change",
+                        data=merged, palette="coolwarm", ax=ax2)
+            ax2.set_title("Population Change Rate (%)")
+            ax2.set_xlabel("Change (%)")
+            ax2.set_ylabel("")
+            for p in ax2.patches:
+                ax2.text(p.get_width(), p.get_y()+0.5,
+                         f"{p.get_width():.2f}%", va="center")
+
+            st.pyplot(fig1); st.pyplot(fig2)
 
             st.markdown(
-                f"""
-                **Forecast logic**  
-                • Average net change (births − deaths) over last 3 yrs ≈ **{net_change:,.0f}**  
-                • Extrapolated {years_ahead} yrs → 2035 population ≈ **{pred_2035:,}** persons
-                """
+                "- **Gyeonggi** (경기) 등 수도권은 여전히 인구가 순증하고 있지만, 다수 지방권은 순감세가 두드러집니다.\n"
+                "- 변화율(% 기준)로 보면 **세종**처럼 규모는 작지만 성장률이 높은 도시가 상위권에 위치합니다."
             )
 
-        # 3) Region 5‑year change ranking --------------------------------------
-        with tab_region:
-            st.header("Region 5‑Year Change Ranking")
-            current_year = df["연도"].max()
-            prev_year = current_year - 5
-            cur = df[(df["연도"] == current_year) & (df["지역"] != "전국")]
-            prev = df[(df["연도"] == prev_year) & (df["지역"] != "전국")]
-            merged = cur.merge(prev, on="지역", suffixes=("_cur", "_prev"))
-            merged["Δ"] = merged["인구_cur"] - merged["인구_prev"]
-            merged["Δ_rate"] = merged["Δ"] / merged["인구_prev"]
-            merged["Δ_thou"] = merged["Δ"] / 1_000
-            merged["Δ_rate_pct"] = merged["Δ_rate"] * 100
-            merged["region_en"] = merged["지역"].map(KOR2ENG).fillna(merged["지역"])
-            merged.sort_values("Δ_thou", ascending=False, inplace=True)
+        # === 4. 증감 Top 100 ===
+        with 탭[3]:
+            st.subheader("Year-to-Year Δ Top 100 (증감 상위)")
 
-            # Δ (천명) bar
-            fig1, ax1 = plt.subplots(figsize=(8, 6))
-            sns.barplot(y="region_en", x="Δ_thou", data=merged, palette="crest", ax=ax1)
-            ax1.set_xlabel("Δ Population (×1,000)")
-            ax1.set_ylabel("Region")
-            for i, v in enumerate(merged["Δ_thou"]):
-                ax1.text(v, i, f"{v:,.1f}", va="center")
-            ax1.set_title("5‑Year Change")
-            st.pyplot(fig1)
+            tmp = df.sort_values(["지역", "연도"])
+            tmp["diff"] = tmp.groupby("지역")["인구"].diff()
+            top100 = tmp[tmp["지역"] != "전국"].nlargest(100, "diff").copy()
 
-            # Δ rate (%) bar
-            fig2, ax2 = plt.subplots(figsize=(8, 6))
-            sns.barplot(y="region_en", x="Δ_rate_pct", data=merged, palette="flare_r", ax=ax2)
-            ax2.set_xlabel("Δ Rate (%)")
-            ax2.set_ylabel("Region")
-            for i, v in enumerate(merged["Δ_rate_pct"]):
-                ax2.text(v, i, f"{v:+.2f}%", va="center")
-            ax2.set_title("5‑Year Rate Change")
-            st.pyplot(fig2)
+            top100["연도"] = top100["연도"].astype(int)
+            top100["diff_fmt"] = top100["diff"].apply(lambda x: f"{int(x):,}")
 
-            st.markdown(f"Comparison between **{prev_year}** and **{current_year}**.")
-
-        # 4) Top‑100 annual Δ table -------------------------------------------
-        with tab_change:
-            st.header("Top‑100 Annual Δ Cases")
-            dfn = df[df["지역"] != "전국"].sort_values(["지역", "연도"])
-            dfn["Δ"] = dfn.groupby("지역")["인구"].diff()
-            top100 = dfn.nlargest(100, "Δ", keep="all").copy()
-            top100["Δ_fmt"] = top100["Δ"].apply(lambda x: f"{x:,+}")
-            top100["region_en"] = top100["지역"].map(KOR2ENG).fillna(top100["지역"])
-
-            def color_delta(val):
-                if pd.isna(val):
-                    return ""
-                return "background-color: rgba(0,0,255,0.2)" if val > 0 else "background-color: rgba(255,0,0,0.2)"
+            def highlight(val):
+                color = "background-color: lightblue" if val > 0 else \
+                        "background-color: lightcoral"
+                return color
 
             styled = (
-                top100[["연도", "region_en", "Δ_fmt"]]
-                .rename(columns={"연도": "Year", "region_en": "Region", "Δ_fmt": "Δ"})
+                top100[["연도","지역","diff_fmt"]]
+                .rename(columns={"연도":"Year","지역":"Region","diff_fmt":"Δ"})
                 .style
-                .applymap(color_delta, subset=["Δ"])
-                .hide(axis="index")
+                .applymap(lambda v: highlight(int(v.replace(",",""))), subset=["Δ"])
             )
-            st.dataframe(styled, use_container_width=True)
 
-        # 5) Pivot + stacked area ---------------------------------------------
-        with tab_viz:
-            st.header("Stacked Area by Region")
-            pv = (
-                df[df["지역"] != "전국"].pivot_table(index="연도", columns="region_en", values="인구", aggfunc="sum").fillna(0)
+            st.dataframe(styled, use_container_width=True,
+                         hide_index=True, height=600)
+
+        # === 5. 시각화 (누적 영역) ===
+        with 탭[4]:
+            st.subheader("Stacked Area – Region × Year")
+
+            pivot = (
+                df[df["지역"] != "전국"]
+                .pivot_table(index="연도", columns="지역", values="인구", aggfunc="first")
             )
-            fig, ax = plt.subplots(figsize=(10, 6))
-            pv.plot.area(ax=ax, stacked=True, linewidth=0)
+            # 컬럼 영문으로 변환
+            pivot.columns = [kor2eng[c] for c in pivot.columns]
+
+            fig, ax = plt.subplots(figsize=(10,6))
+            ax.stackplot(pivot.index, pivot.T, labels=pivot.columns)
             ax.set_title("Population by Region (Stacked Area)")
             ax.set_xlabel("Year")
             ax.set_ylabel("Population")
-            ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1))
+            ax.legend(loc="upper left", ncol=2, fontsize="small")
             st.pyplot(fig)
-            st.markdown("Stacked area chart shows each region’s share over time.")
-
 # ---------------------
 # 페이지 객체 생성
 # ---------------------
